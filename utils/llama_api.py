@@ -17,7 +17,6 @@ class LlamaAPI():
             model=model,
             messages=messages,
         )
-        print(response)
         return response
 
     @staticmethod

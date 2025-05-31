@@ -23,7 +23,11 @@ class Annotator:
 
         # 2. Describe frames
         frames = self.vid.describe_frames(frame_dict,
-                                    context="This is a frame of tv footage of a basketball game. I'm particularly interested in the basketball actions and plays in the game",
+                                    context= ("This is a frame of tv footage of a basketball game, you don't need to mention that in your response. "
+                                    "If the frame is of the basketball game in play and you can see the ball, only focus on the ball handler, what he is doing and how he is being defended."
+                                    "Be specific with details a referee would be interested in. "
+                                    "Assume that frames a second ago (and beyond) have already been annotated, so you can focus on the subject at hand. No need to 'start from scratch' in describing the game."
+                                    "Ignore descriptions of the setting, stadium, crowd or the scoreboard on screen"),
                                     threads=10)
         self.save_annotations(frames, os.path.join("data", "annotations", f"{self.vid.name_no_ext}_annotations_vid.json"))
 
@@ -89,7 +93,7 @@ if __name__ == "__main__":
     video_file = os.path.join(base_dir, 'data', 'video', video_file_name)
 
     annotator = Annotator(video_file)
-    # annotator.annotate_video()
+    annotator.annotate_video()
     # annotator.annotate_audio(video_file)
 
     annotator.compile_annotaions(

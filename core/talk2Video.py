@@ -18,7 +18,7 @@ class Talk2Video:
             raise FileNotFoundError(f"Annotations file not found: {self.annotations_path}")
         
         with open(self.annotations_path, 'r') as f:
-            return  dict(sorted(json.load(f).items(), key=lambda item: float(item[0])))
+            return dict(sorted(json.load(f).items(), key=lambda item: float(item[0])))
     
 
     def chunk_annotations(self, annotations:dict, token_limit: int = 128000) -> list:
@@ -59,13 +59,15 @@ class Talk2Video:
         annotation_chunks = self.chunk_annotations(annotations = self.simple_annotations, token_limit=120000)
 
         summaries = []
-        for chunk in annotation_chunks:
+        for i, chunk in enumerate(annotation_chunks):
+            print(f"Processing chunk with {i} / {len(annotation_chunks)} annotations...")
             context = json.dumps(chunk)
             messages = [
             {
                 "role": "system",
                 "content": (
-                "You are an expert video summarizer. Your task is to create a high-level sequential summary of a video based on its annotations.\n"
+                "You are an expert annotation summarizer.\n"
+                "Your task is to take a series of timestamped annotations and create a sequential summary of what happened in the video.\n"
                 "The annotations give you the timestamp in seconds, along with a summary of the content of the frame or audio."
                 ),
             },
@@ -74,12 +76,31 @@ class Talk2Video:
                 "content": context
             }
             ]
-            response = self.llama_api.ask(messages, model='Llama-4-Scout-17B-16E-Instruct-FP8')
+            response = self.llama_api.ask(messages, model='Llama-4-Maverick-17B-128E-Instruct-FP8')
             summaries.append(response.completion_message.content.text if hasattr(response, "completion_message") else str(response))
 
         aggregated_summary = "\n".join(summaries)
+
+        # summarize the aggregated summary
+        final_messages = [
+            {
+                "role": "system",
+                "content": (
+                    "You are an expert annotation summarizer.\n"
+                    "Your task is to take a series of timestamped annotations and create a sequential summary of what happened in the video.\n"
+                ),
+            },
+            {
+                "role": "user",
+                "content": aggregated_summary
+            }
+        ]
+        response = self.llama_api.ask(final_messages, model='Llama-4-Maverick-17B-128E-Instruct-FP8')
         return aggregated_summary
         
+
+    # def look_for_event(self, event: str, window_length:int = 5) -> dict:
+
 
 if __name__ == "__main__":
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

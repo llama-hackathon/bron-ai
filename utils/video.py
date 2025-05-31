@@ -7,6 +7,7 @@ import os
 from llama_api_client import LlamaAPIClient
 from dotenv import load_dotenv
 import json
+import concurrent.futures
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 class Video:
@@ -63,34 +64,42 @@ class Video:
         print(f"Saved {frame_count} frames to {frames_dir}")
         return frame_dict
 
-    def describe_frames(self, frames: dict):
+    def describe_frames(self, frames: dict, context: str = None, threads:int = 20) -> dict:
 
         client = LlamaAPIClient(
             api_key=os.environ.get("LLAMA_API_KEY"),
         )
-        for seconds, frame in frames.items():
+
+        def describe_frame(args):
+            seconds, frame = args
             print(f"Describing frame at {seconds} seconds...")
             response = client.chat.completions.create(
-                model="Llama-4-Maverick-17B-128E-Instruct-FP8",
-                messages=[
+            model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+            messages=[
+                {
+                "role": "user",
+                "content": [
                     {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "What does this image contain?",
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{frame['data']}"
-                                },
-                            },
-                        ],
+                    "type": "text",
+                    "text": f"Provide a couple sentences describing what is in this image. {context if context else ''} ",
+                    },
+                    {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{frame['data']}"
+                    },
                     },
                 ],
+                },
+            ],
             )
-            frame['annotation'] = response.completion_message.content.text
+            return seconds, response.completion_message.content.text
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+            results = list(executor.map(describe_frame, frames.items()))
+
+        for seconds, annotation in results:
+            frames[seconds]['annotation'] = annotation
 
         return frames
 
@@ -116,4 +125,5 @@ if __name__ == "__main__":
     frame_dict = vid.extract_frames(seconds_per_frame=60)
 
     # 2. Describe frames
-    frames = vid.describe_frames(frame_dict)
+    frames = vid.describe_frames(frame_dict,
+                                 context="This is a frame of tv footage of a basketball game. I'm particularly interested in the basketball actions and plays in the game")

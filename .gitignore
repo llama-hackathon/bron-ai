@@ -6,3 +6,4 @@ bron-ai-env/
 *.mp3
 models/
 __pycache__/
+*annotations_vid.json

@@ -10,3 +10,5 @@ source /Users/james/Documents/Projects/bron-ai/bron-ai-env/bin/activate
 # Step 4: Upgrade pip and install requirements
 pip install --upgrade pip
 pip install -r requirements.txt
+
+ffmpeg -i 2016_Finals_Game_7.mp4 -t 00:20:00 -c copy game_20.mp4

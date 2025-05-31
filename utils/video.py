@@ -112,12 +112,8 @@ if __name__ == "__main__":
     video_file = os.path.join(base_dir, 'data', 'video', 'game.mp4')
     vid = Video(video_file)
 
-    # # Extract 1 frame per minute (to start). You can adjust the `seconds_per_frame` parameter to change the sampling rate
-    # frame_dict = vid.extract_frames(seconds_per_frame=60)
-    # print(frame_dict.keys())  # Print first 5 frames for verification
+    # 1. Extract 1 frame per minute (to start). You can adjust the `seconds_per_frame` parameter to change the sampling rate
+    frame_dict = vid.extract_frames(seconds_per_frame=60)
 
-
-
-    # Extract audio
-    audio_output = os.path.join(base_dir, 'data', 'audio', 'game.wav')
-    vid.extract_audio(audio_output)
+    # 2. Describe frames
+    frames = vid.describe_frames(frame_dict)

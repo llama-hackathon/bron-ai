@@ -1,4 +1,8 @@
-bron-ai/
+bron-ai-env/
 *.mp4
 *.wav
 *.DS_Store
+*.jpg
+*.mp3
+models/
+__pycache__/

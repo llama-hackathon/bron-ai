@@ -51,15 +51,20 @@ def process_video(video_path, seconds_per_frame=2):
 
 
 # Extract 1 frame per minute (to start). You can adjust the `seconds_per_frame` parameter to change the sampling rate
-base64Frames, audio_path = process_video('data/first10min.mp4', seconds_per_frame=60)
+video_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'video', 'game.mp4')
+base64Frames, audio_path = process_video(video_file, seconds_per_frame=60)
 
 
 
 from llama_api_client import LlamaAPIClient
+from dotenv import load_dotenv
+
+# Load environment variables from .env file in the parent folder
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 client = LlamaAPIClient(
-            api_key=os.environ.get("LLAMA_API_KEY"),  # This is the default and can be omitted
-        )
+    api_key=os.environ.get("LLAMA_API_KEY"),
+)
 
 for frame in base64Frames:
     response = client.chat.completions.create(

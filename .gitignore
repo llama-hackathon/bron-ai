@@ -7,3 +7,4 @@ bron-ai-env/
 models/
 __pycache__/
 *annotations_vid.json
+*.claude/

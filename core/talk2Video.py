@@ -35,7 +35,7 @@ class Talk2Video:
     def annotate_audio(self):
 
         # 1. Extract audio
-        audio_output = os.path.join(self.video_filepath, '..', 'audio', f'{self.vid.name_no_ext}.wav')
+        audio_output = os.path.join('data' 'audio', f'{self.vid.name_no_ext}.wav')
         self.vid.extract_audio(audio_output)
 
         # 2. Transcribe audio
@@ -232,39 +232,40 @@ if __name__ == "__main__":
     talk2video = Talk2Video(video_path)
 
     ##### ANNOTATE VIDEO #####
-    talk2video.annotate_video(
-        seconds_per_frame=1, 
-        context=("This is a frame of tv footage of a basketball game, you don't need to mention that in your response. "
-            "If the frame is of the basketball game in play and you can see the ball, only focus on the ball handler, what he is doing and how he is being defended."
-            "Be specific with details a referee would be interested in. "
-            "Assume that frames a second ago (and beyond) have already been annotated, so you can focus on the subject at hand. No need to 'start from scratch' in describing the game."
-            "Ignore descriptions of the setting, stadium, crowd or the scoreboard on screen"))
+    # talk2video.annotate_video(
+    #     seconds_per_frame=600, 
+    #     context=("This is a frame of tv footage of a basketball game, you don't need to mention that in your response. "
+    #         "If the frame is of the basketball game in play and you can see the ball, only focus on the ball handler, what he is doing and how he is being defended."
+    #         "Be specific with details a referee would be interested in. "
+    #         "Assume that frames a second ago (and beyond) have already been annotated, so you can focus on the subject at hand. No need to 'start from scratch' in describing the game."
+    #         "Ignore descriptions of the setting, stadium, crowd or the scoreboard on screen"))
     
-    talk2video.annotate_audio()
+    # talk2video.annotate_audio()
 
-    talk2video.compile_annotaions(
-        video_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_vid.json"), 'r')),
-        audio_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_audio.json"), 'r'))
-    )
+    # talk2video.compile_annotaions(
+    #     video_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_vid.json"), 'r')),
+    #     audio_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_audio.json"), 'r'))
+    # )
     # summary = talk2video.summarize_annotations()
     # print("Video Summary:")
     # print(summary)
 
     ##### LOOK FOR EVENT #####
-    # annotations_file = os.path.join(base_dir, 'data', 'annotations', 'game_2_20_annotations.json')
-    # fouls = []
-    # for i in range(1, 3):
-    #     print(i)
-    #     fouls_window = talk2video.look_for_event("""
-    #             • Illegal contact with the shooter's arms, wrist, or hand on the ball
-    #             • Body-to-body displacement that affects balance or verticality
-    #             • Defender invading the shooter's landing space (counter to rule 10-IV-f)
-    #             • Contact on the head/neck or airborne shooter (automatic)
-    #             • Push from behind or on the side causing altered shot trajectory
-    #     """, 
-    #     window_length=5,
-    #     search_start=0,
-    #     search_end=60*i*10)
-    #     fouls.extend(fouls_window)
-    #     time.sleep(20)
-    #     print(fouls)
+    annotations_file = os.path.join(base_dir, 'data', 'annotations', 'game_2_20_annotations.json')
+    talk2video.load_annotations(annotations_file)
+    fouls = []
+    for i in range(1, 2):
+        print(i)
+        fouls_window = talk2video.look_for_event("""
+                • Illegal contact with the shooter's arms, wrist, or hand on the ball
+                • Body-to-body displacement that affects balance or verticality
+                • Defender invading the shooter's landing space (counter to rule 10-IV-f)
+                • Contact on the head/neck or airborne shooter (automatic)
+                • Push from behind or on the side causing altered shot trajectory
+        """, 
+        window_length=5,
+        search_start=0,
+        search_end=60*i*10)
+        fouls.extend(fouls_window)
+        time.sleep(20)
+        print(fouls)

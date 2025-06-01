@@ -4,6 +4,7 @@ import json
 from typing import List, Dict, Union
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.talk2Video import Talk2Video
+import subprocess
 
 DETAIL_ANNOTATOR_PROMPT = """
         You are a keen eyed basketball referee, watching a basketball play. 
@@ -138,9 +139,14 @@ class Referee:
         """
         Make a judgement using fan-aligned LLM.
         """
-        print(f"Fan analysis: {analysis}")
+        cmd = ['mlx_lm.generate', '--model', 'mlx-community/Meta-Llama-3.1-8B-Instruct-bf16', '--adapter-path', '/Users/benedict/repo/lora/adapters', '--verbose', 'F', '--prompt', analysis]
+        raw_result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(raw_result.stdout)
+        print(raw_result.stderr)
+        # print(f"Fan aligned judgement: {result}")
 
-        pass
+        result = raw_result.stdout.strip()
+        return result == 'true'
 
     def make_judgement(self, analyses: Union[str,list]):
         """
@@ -180,26 +186,36 @@ class Referee:
             is_foul_present = False
 
         clumped_annotations = "\n----\n".join(analyses)
-        json_annotations = json.dumps(clumped_annotations)
-        json_judgement = json.dumps(judge_text)
-
+        # json_annotations = json.dumps(clumped_annotations)
+        # json_judgement = json.dumps(judge_text)
         # return json_annotations, json_judgement, is_foul_present
+
         return is_foul_present
     
 if __name__ == "__main__":
+    import sys
+    target = int(sys.argv[1])
+    
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    video_file = os.path.join(base_dir, 'data', 'video', 'game_2_60.mp4')
+    video_file = os.path.join(base_dir, 'data', 'nba_2016_finals_6.mp4')
     # video_file = os.path.join(base_dir, 'data', 'foulless_play.mp4')
 
     ref = Referee(video_file)
 
+    # no_foul = ref.fan_aligned_judgement("The player is shown standing on the court, adjusting his jersey and reacting to the game, with no visible contact between him and a defender; the images do not depict any specific play or action relevant to foul calling; the player's facial expressions suggest he is focused on the game.")
+    # assert no_foul == False
+    # foul = ref.fan_aligned_judgement("The defensive player initiates moderate contact with the offensive player's arm or upper body using his forearm, impeding their progress, and potentially committing a foul. The contact is a result of the defender's attempt to gain an advantageous position or disrupt the opponent's action. The severity is moderate, indicating a deliberate attempt to interfere with the opponent's action.")
+    # assert foul == True
+
     res = []
-    # for interesting_ts in [22, 152, 177, 217, 262, 337, 477, 582, 22, 152, 177, 217, 262, 272, 337, 362, 477, 582, 637, 647, 672, 767, 817, 927, 937, 1127, 1132, 1177, 1187]:
-    for interesting_ts in [337]:
+    # # for interesting_ts in [22, 152, 177, 217, 262, 337, 477, 582, 22, 152, 177, 217, 262, 272, 337, 362, 477, 582, 637, 647, 672, 767, 817, 927, 937, 1127, 1132, 1177, 1187]:
+    for interesting_ts in [target]:
         summary = ref.look_into_video(interesting_ts, boundry_seconds=2)
         result = ref.make_judgement(summary)
-        print(f"Foul is present: {result}")
-        #res.append((interesting_ts, summary))
+        ft_result = ref.fan_aligned_judgement(summary)
+        print(f"Foul is present (maverick) : {result}")
+        print(f"Foul is present (fan aligned / fine tuned) : {ft_result}")
+        res.append((interesting_ts, summary, result, ft_result))
 
     # pipe separated csv
     # import csv

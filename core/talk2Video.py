@@ -228,24 +228,24 @@ class Talk2Video:
 
 if __name__ == "__main__":
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    video_path = os.path.join(base_dir, 'data', 'video', 'game_2_20.mp4')
+    video_path = os.path.join(base_dir, 'data', 'video', 'game_2_60.mp4')
     talk2video = Talk2Video(video_path)
 
     ##### ANNOTATE VIDEO #####
-    # talk2video.annotate_video(
-    #     seconds_per_frame=60, 
-    #     context=("This is a frame of tv footage of a basketball game, you don't need to mention that in your response. "
-    #         "If the frame is of the basketball game in play and you can see the ball, only focus on the ball handler, what he is doing and how he is being defended."
-    #         "Be specific with details a referee would be interested in. "
-    #         "Assume that frames a second ago (and beyond) have already been annotated, so you can focus on the subject at hand. No need to 'start from scratch' in describing the game."
-    #         "Ignore descriptions of the setting, stadium, crowd or the scoreboard on screen"))
+    talk2video.annotate_video(
+        seconds_per_frame=1, 
+        context=("This is a frame of tv footage of a basketball game, you don't need to mention that in your response. "
+            "If the frame is of the basketball game in play and you can see the ball, only focus on the ball handler, what he is doing and how he is being defended."
+            "Be specific with details a referee would be interested in. "
+            "Assume that frames a second ago (and beyond) have already been annotated, so you can focus on the subject at hand. No need to 'start from scratch' in describing the game."
+            "Ignore descriptions of the setting, stadium, crowd or the scoreboard on screen"))
     
-    # talk2video.annotate_audio()
+    talk2video.annotate_audio()
 
-    # talk2video.compile_annotaions(
-    #     video_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_vid.json"), 'r')),
-    #     audio_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_audio.json"), 'r'))
-    # )
+    talk2video.compile_annotaions(
+        video_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_vid.json"), 'r')),
+        audio_annotations=json.load(open(os.path.join("data", "annotations", f"{talk2video.vid.name_no_ext}_annotations_audio.json"), 'r'))
+    )
     # summary = talk2video.summarize_annotations()
     # print("Video Summary:")
     # print(summary)

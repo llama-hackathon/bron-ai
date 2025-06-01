@@ -194,28 +194,32 @@ class Video:
 
         def describe_frame(args):
             seconds, frame = args
-            print(f"Describing frame at {seconds} seconds...")
-            response = self.client.chat.completions.create(
-            model="Llama-4-Maverick-17B-128E-Instruct-FP8",
-            messages=[
-                {
-                "role": "user",
-                "content": [
-                    {
-                    "type": "text",
-                    "text": f"Provide a couple sentences describing what is in this image. {context if context else ''} ",
-                    },
-                    {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{frame['data']}"
-                    },
-                    },
-                ],
-                },
-            ],
-            )
-            return seconds, response.completion_message.content.text
+            try:
+                print(f"Describing frame at {seconds} seconds...")
+                response = self.client.chat.completions.create(
+                    model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": f"Provide a couple sentences describing what is in this image. {context if context else ''} ",
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{frame['data']}"
+                                    },
+                                },
+                            ],
+                        },
+                    ],
+                )
+                return seconds, response.completion_message.content.text
+            except Exception as e:
+                print(f"Error describing frame at {seconds} seconds: {e}")
+                return seconds, f"Error: {e}"
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
             results = list(executor.map(describe_frame, frames.items()))

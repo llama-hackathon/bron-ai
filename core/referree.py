@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+from typing import List, Dict, Union
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.talk2Video import Talk2Video
 
@@ -22,6 +23,18 @@ DETAIL_ANNOTATOR_PROMPT = """
         You do not need to give a frame by frame description, just the most relevant information of the sequence. 
 
     """
+
+ANALYSIS_SUMMARY_PROMPT = """
+    You are a keen eyed basketball referee, watching annotations of basketball play.
+
+    I want you to summarize the annotations of the play in a 2-3 sentences, focusing on the most relevant information for foul calling.
+    The annotations are provided in a time-ordered list.
+    You do not need to give a frame by frame description, just the most relevant information of the sequence. 
+    Just return the summary as a single string, without any additional text.
+
+    ANNOTATIONS:
+    ANNOTATION_DATA_TOKEN
+"""
 
 FOUL_JUDGEMENT_PROMPT = """ 
         You are a seasoned basketball referee with expert knowledge of NBA rules
@@ -45,7 +58,7 @@ FOUL_JUDGEMENT_PROMPT = """
         • Illegal contact with the shooter's arms, wrist, or hand on the ball  
         • Body-to-body displacement that affects balance or verticality  
         • Defender invading the shooter's landing space (counter to rule 10-IV-f)  
-        • Contact on the head/neck or airborne shooter (automatic)  
+        • Contact on the shooter's head/neck (automatic)  
         • Push from behind or on the side causing altered shot trajectory
 
 
@@ -54,17 +67,16 @@ FOUL_JUDGEMENT_PROMPT = """
         ANNOTATION_DATA_TOKEN"""
 
 class Referee:
-    def __init__(self):
-        pass
+    def __init__(self, video_filepath: str):
+        self.talk_to_video = Talk2Video(video_filepath)
 
-    def look_into_video(self, video_filepath: str, timestamp: int, boundry_seconds: int = 2):
+    def look_into_video(self, timestamp: int, boundry_seconds: int = 2):
         """
         Look into a video file and extract frames for annotation.
         """
-        talk_to_video = Talk2Video(video_filepath)
 
         # focus on frames around the timestamp
-        frames = talk_to_video.vid.cut_frames(max(timestamp-boundry_seconds, 0), timestamp + boundry_seconds, seconds_per_frame=0.2)
+        frames = self.talk_to_video.vid.cut_frames(max(timestamp-boundry_seconds, 0), timestamp + boundry_seconds, seconds_per_frame=0.2)
 
         keys = list(frames.keys())
         keys.sort(key=float)
@@ -73,6 +85,7 @@ class Referee:
 
         analyses = []
         for group in groups:
+            print(f"Analyzing group: {group}")
             messages = []
             messages.append({
                 "role": "user",
@@ -95,15 +108,14 @@ class Referee:
                         },
                     ]
                 })
-            resp = talk_to_video.vid.client.chat.completions.create(
+            resp = self.talk_to_video.vid.client.chat.completions.create(
                 model="Llama-4-Maverick-17B-128E-Instruct-FP8",
                 messages=messages,
             )
             analyses.append(resp.completion_message.content.text)
 
-        print("\n--------------------------------\n".join(analyses))
-        print('--------------------------------')
-        judgement = talk_to_video.vid.client.chat.completions.create(
+        # summarise the analyses
+        summary_raw = self.talk_to_video.vid.client.chat.completions.create(
             model="Llama-4-Maverick-17B-128E-Instruct-FP8",
             messages=[
                 {
@@ -111,7 +123,44 @@ class Referee:
                     "content": [
                         {
                             "type": "text",
-                            "text": FOUL_JUDGEMENT_PROMPT.replace("ANNOTATION_DATA_TOKEN", "\n".join(analyses)),
+                            "text": ANALYSIS_SUMMARY_PROMPT.replace("ANNOTATION_DATA_TOKEN", "\n".join(analyses)),
+                        }
+                    ]
+                }
+            ],
+        )
+        summary = summary_raw.completion_message.content.text
+        print(f"Summary of the play: {summary}")
+        return summary
+
+
+    def fan_aligned_judgement(self, analysis: str):
+        """
+        Make a judgement using fan-aligned LLM.
+        """
+        print(f"Fan analysis: {analysis}")
+
+        pass
+
+    def make_judgement(self, analyses: Union[str,list]):
+        """
+        Make a judgement based on generic .
+        """
+        # print("\n--------------------------------\n".join(analyses))
+        # print('--------------------------------')
+
+        if isinstance(analyses, list):
+            analyses = "\n".join(analyses)
+
+        judgement = self.talk_to_video.vid.client.chat.completions.create(
+            model="Llama-4-Maverick-17B-128E-Instruct-FP8",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": FOUL_JUDGEMENT_PROMPT.replace("ANNOTATION_DATA_TOKEN", analyses),
                         }
                     ]
                 }
@@ -134,25 +183,23 @@ class Referee:
         json_annotations = json.dumps(clumped_annotations)
         json_judgement = json.dumps(judge_text)
 
-        return json_annotations, json_judgement, is_foul_present
-    
-    def make_decision(self, json_annotations: str, json_judgement: str):
-        """
-        Use finetuned LLM Model to make a decision based on the annotations and judgement text.
-        """
-        pass
+        # return json_annotations, json_judgement, is_foul_present
+        return is_foul_present
     
 if __name__ == "__main__":
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    video_file = os.path.join(base_dir, 'data', 'video', 'game_2_20.mp4')
+    video_file = os.path.join(base_dir, 'data', 'video', 'game_2_60.mp4')
     # video_file = os.path.join(base_dir, 'data', 'foulless_play.mp4')
 
-    ref = Referee()
+    ref = Referee(video_file)
 
     res = []
-    for interesting_ts in [22, 152, 177, 217, 262, 337, 477, 582, 22, 152, 177, 217, 262, 272, 337, 362, 477, 582, 637, 647, 672, 767, 817, 927, 937, 1127, 1132, 1177, 1187]:
-        json_escaped_annotations, judgement_text, is_foul_present = ref.look_into_video(video_file, interesting_ts, boundry_seconds=2)
-        res.append((interesting_ts, json_escaped_annotations, judgement_text, is_foul_present))
+    # for interesting_ts in [22, 152, 177, 217, 262, 337, 477, 582, 22, 152, 177, 217, 262, 272, 337, 362, 477, 582, 637, 647, 672, 767, 817, 927, 937, 1127, 1132, 1177, 1187]:
+    for interesting_ts in [337]:
+        summary = ref.look_into_video(interesting_ts, boundry_seconds=2)
+        result = ref.make_judgement(summary)
+        print(f"Foul is present: {result}")
+        #res.append((interesting_ts, summary))
 
     # pipe separated csv
     # import csv

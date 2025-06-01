@@ -89,12 +89,12 @@ class Annotator:
 
 if __name__ == "__main__":  
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    video_file_name = 'game_20.mp4'
+    video_file_name = 'game_2_20.mp4'
     video_file = os.path.join(base_dir, 'data', 'video', video_file_name)
 
     annotator = Annotator(video_file)
     annotator.annotate_video()
-    # annotator.annotate_audio(video_file)
+    annotator.annotate_audio(video_file)
 
     annotator.compile_annotaions(
         video_annotations=json.load(open(os.path.join("data", "annotations", f"{annotator.vid.name_no_ext}_annotations_vid.json"), 'r')),

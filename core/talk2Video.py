@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+import time
 import numpy as np
 import concurrent.futures
 
@@ -152,28 +153,33 @@ class Talk2Video:
             results = list(executor.map(search_window, window_args))
 
         event_timestamps.extend([r for r in results if r is not None])
-        print(event_timestamps)
+        return event_timestamps
 
 
 
 
 if __name__ == "__main__":
     base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-    annotations_file = os.path.join(base_dir, 'data', 'annotations', 'game_20_annotations.json')
+    annotations_file = os.path.join(base_dir, 'data', 'annotations', 'game_2_20_annotations.json')
     
     talk2video = Talk2Video(annotations_file)
 
     # summary = talk2video.summarize_annotations()
     # print("Video Summary:")
     # print(summary)
-
-    talk2video.look_for_event("""
-        • Illegal contact with the shooter's arms, wrist, or hand on the ball
-        • Body-to-body displacement that affects balance or verticality
-        • Defender invading the shooter's landing space (counter to rule 10-IV-f)
-        • Contact on the head/neck or airborne shooter (automatic)
-        • Push from behind or on the side causing altered shot trajectory
-""", 
-                              window_length=5,
-                              search_start=60*10,
-                              search_end=60*20)  # Search within the first 5 minutes
+    fouls = []
+    for i in range(1, 3):
+        print(i)
+        fouls_window = talk2video.look_for_event("""
+                • Illegal contact with the shooter's arms, wrist, or hand on the ball
+                • Body-to-body displacement that affects balance or verticality
+                • Defender invading the shooter's landing space (counter to rule 10-IV-f)
+                • Contact on the head/neck or airborne shooter (automatic)
+                • Push from behind or on the side causing altered shot trajectory
+        """, 
+        window_length=5,
+        search_start=0,
+        search_end=60*i*10)  # Search within the first 5 minutes
+        fouls.extend(fouls_window)
+        time.sleep(20)
+        print(fouls)

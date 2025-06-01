@@ -2,7 +2,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.video import Video
+from utils.video import parse_foul_info
 
 class Referee:
     def __init__(self):
@@ -12,6 +12,8 @@ class Referee:
         """
         Look into a video file and extract frames for annotation.
         """
-        vid = Video(video_filepath)
-        frame_dict = vid.extract_frames(seconds_per_frame=1)
+
+        # 
+        vid = parse_foul_info(video_filepath)
+
 
